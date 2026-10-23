@@ -1,0 +1,7 @@
+Public trust-anchor certificates, not keys or application credentials.
+ISRG Root X1: https://letsencrypt.org/certs/isrgrootx1.pem
+ISRG Root X2: https://letsencrypt.org/certs/isrg-root-x2.pem
+GTS Root R1/R2/R3/R4: first four certificates in https://pki.goog/roots.pem
+Fetched 23 October 2026. Cloudflare can use different issuers/chains by client.
+Regenerate the header using python3 tools/3dsrp/make_usage_roots.py.
+Certificate and hostname verification remain enabled; no insecure fallback.

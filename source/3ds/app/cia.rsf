@@ -1,0 +1,111 @@
+BasicInfo:
+  Title: 3DSRP
+  CompanyCode: "00"
+  ProductCode: CTR-P-3DRP
+  ContentType: Application
+  Logo: Homebrew
+TitleInfo:
+  Category: Application
+  UniqueId: 0xF0B17
+Option:
+  UseOnSD: true
+  FreeProductCode: true
+  MediaFootPadding: false
+  EnableCrypt: false
+  EnableCompress: true
+AccessControlInfo:
+  CoreVersion: 2
+  DescVersion: 2
+  ReleaseKernelMajor: "02"
+  ReleaseKernelMinor: "50"
+  UseExtSaveData: false
+  FileSystemAccess:
+    - DirectSdmc
+    - DirectSdmcWrite
+  MemoryType: Application
+  SystemMode: 64MB
+  SystemModeExt: 124MB
+  IdealProcessor: 0
+  AffinityMask: 1
+  Priority: 16
+  MaxCpu: 0xFF
+  HandleTableSize: 0x200
+  DisableDebug: false
+  EnableForceDebug: false
+  CanWriteSharedPage: true
+  CanUsePrivilegedPriority: false
+  CanUseNonAlphabetAndNumber: true
+  PermitMainFunctionArgument: true
+  CanShareDeviceMemory: true
+  RunnableOnSleep: false
+  SpecialMemoryArrange: true
+  CpuSpeed: 804MHz
+  EnableL2Cache: true
+  CanAccessCore2: true
+  IORegisterMapping:
+    - 1ff00000-1ff7ffff
+  MemoryMapping:
+    - 1f000000-1f5fffff:r
+  SystemCallAccess:
+    ControlMemory: 1
+    QueryMemory: 2
+    ExitProcess: 3
+    CreateThread: 8
+    ExitThread: 9
+    SleepThread: 10
+    GetThreadPriority: 11
+    SetThreadPriority: 12
+    CreateMutex: 19
+    ReleaseMutex: 20
+    CreateEvent: 23
+    SignalEvent: 24
+    ClearEvent: 25
+    CreateMemoryBlock: 30
+    MapMemoryBlock: 31
+    UnmapMemoryBlock: 32
+    CreateAddressArbiter: 33
+    ArbitrateAddress: 34
+    CloseHandle: 35
+    WaitSynchronization1: 36
+    WaitSynchronizationN: 37
+    DuplicateHandle: 39
+    GetSystemTick: 40
+    ConnectToPort: 45
+    SendSyncRequest: 50
+    GetResourceLimit: 56
+    GetResourceLimitLimitValues: 57
+    GetResourceLimitCurrentValues: 58
+    Break: 60
+  ServiceAccessControl:
+    - APT:U
+    - ac:u
+    - cfg:u
+    - dsp::DSP
+    - fs:USER
+    - gsp::Gpu
+    - gsp::Lcd
+    - ps:ps
+    - hid:USER
+    - ir:rst
+    - mvd:STD
+    - ndm:u
+    - ptm:sysm
+    - soc:U
+SystemControlInfo:
+  SaveDataSize: 0KB
+  RemasterVersion: 0
+  StackSize: 0x40000
+  Dependency:
+    ac: 0x0004013000002402
+    am: 0x0004013000001502
+    cfg: 0x0004013000001702
+    dsp: 0x0004013000001a02
+    gsp: 0x0004013000001c02
+    hid: 0x0004013000001d02
+    ps: 0x0004013000003102
+    ir: 0x0004013000003302
+    mvd: 0x0004013020004102
+    ndm: 0x0004013000002b02
+    nwm: 0x0004013000002d02
+    ptm: 0x0004013000002202
+    socket: 0x0004013000002e02

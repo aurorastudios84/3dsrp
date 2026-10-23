@@ -1,0 +1,15 @@
+Mbed TLS 2.28.8, Apache License 2.0 (see LICENSE).
+Upstream source: https://github.com/Mbed-TLS/mbedtls/tree/v2.28.8
+
+This copy supplies a private TLS implementation for optional 3DSRP statistics.
+The configuration adds USAGE_PRIVATE_TLS_BUILD, enabling restartable ECC and
+using caller-supplied native PS random bytes rather than platform entropy.
+Unused platform network and timing modules are disabled for the private build.
+No certificate or hostname verification is disabled.
+
+Build artifacts are symbol-namespaced by 3ds/usage-tls/namespace.py. The existing
+Chiaki/core devkitPro crypto library, configuration and ABI remain unchanged.
+The sender requires ECDHE-ECDSA / AES-128-GCM with TLS 1.2, advances ECC in short
+resumable slices, and uses its own nonblocking sockets and configured DNS server.
+Tests, programs and upstream documentation not needed by this build are omitted.
+Original source copyright/license notices are retained.

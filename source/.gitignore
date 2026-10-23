@@ -1,0 +1,19 @@
+# Local build outputs
+build/
+build-3ds/
+cia-build/
+*.o
+*.d
+*.a
+*.elf
+*.3dsx
+*.smdh
+*.cia
+*.pyc
+*.swp
+*.swo
+__pycache__/
+.env
+.env.*
+3ds/usage-tls/lib/
+3ds/app/include/build_id.h
