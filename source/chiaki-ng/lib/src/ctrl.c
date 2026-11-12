@@ -7,6 +7,7 @@
 #include <chiaki/time.h>
 
 #include "utils.h"
+#include "prototype_diag.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -383,6 +384,7 @@ static ChiakiErrorCode ctrl_connect_tcp(ChiakiCtrl *ctrl)
 
 	chiaki_mutex_unlock(&ctrl->notif_mutex);
 	err = chiaki_stop_pipe_connect(&ctrl->stop_pipe, sock, sa, addr->ai_addrlen, 5000);
+	CORE_TRACE("core.control.tcp_connect", "result=%d native_errno=%d",(int)err,err == CHIAKI_ERR_SUCCESS ? 0:errno);
 	chiaki_mutex_lock(&ctrl->notif_mutex);
 	free(sa);
 	if(err != CHIAKI_ERR_SUCCESS)
@@ -414,6 +416,7 @@ static ChiakiErrorCode ctrl_connect_tcp(ChiakiCtrl *ctrl)
 	}
 
 	CHIAKI_LOGI(session->log, "Ctrl connected to %s:%d", session->connect_info.hostname, SESSION_CTRL_PORT);
+	CORE_TRACE("core.control.connected", "port=%u",(unsigned)SESSION_CTRL_PORT);
 	ctrl->sock = sock;
 	return CHIAKI_ERR_SUCCESS;
 }
@@ -821,6 +824,7 @@ CHIAKI_EXPORT ChiakiErrorCode ctrl_message_set_fallback_session_id(ChiakiCtrl *c
 
 static void ctrl_message_received(ChiakiCtrl *ctrl, uint16_t msg_type, uint8_t *payload, size_t payload_size)
 {
+	CORE_TRACE("core.control.message", "type=0x%04x bytes=%u",(unsigned)msg_type,(unsigned)payload_size);
 	if(payload_size > 0)
 	{
 		ChiakiErrorCode err = chiaki_rpcrypt_decrypt(&ctrl->session->rpcrypt, ctrl->crypt_counter_remote++, payload, payload, payload_size);
@@ -1019,7 +1023,8 @@ static void ctrl_message_received_displaya(ChiakiCtrl *ctrl, uint8_t *payload, s
 	{
 		ctrl->cant_displaya = false;
 		CHIAKI_LOGI(ctrl->session->log, "Ctrl received message that the stream can now display.");
-		ctrl->session->display_sink.cantdisplay_cb(ctrl->session->display_sink.user, false);
+		if(ctrl->session->display_sink.cantdisplay_cb)
+			ctrl->session->display_sink.cantdisplay_cb(ctrl->session->display_sink.user, false);
 	}
 }
 
@@ -1029,7 +1034,8 @@ static void ctrl_message_received_displayb(ChiakiCtrl *ctrl, uint8_t *payload, s
 	{
 		if(!(payload[0] == 0x01 && payload[1] == 0xff) && !ctrl->cant_displayb)
 		{
-			ctrl->session->display_sink.cantdisplay_cb(ctrl->session->display_sink.user, true);
+			if(ctrl->session->display_sink.cantdisplay_cb)
+				ctrl->session->display_sink.cantdisplay_cb(ctrl->session->display_sink.user, true);
 			CHIAKI_LOGI(ctrl->session->log, "Ctrl received message that the stream can't display due to displaying some content that can't be streamed.");
 			ctrl->cant_displayb = true;
 		}
@@ -1193,7 +1199,7 @@ static ChiakiErrorCode ctrl_connect(ChiakiCtrl *ctrl)
 	{
 		CHIAKI_LOGI(session->log, "CTRL - Starting RUDP session");
 		RudpMessage message;
-		ChiakiErrorCode err = chiaki_rudp_send_recv(session->rudp, &message, NULL, 0, 0, INIT_REQUEST, INIT_RESPONSE, 8, 3);
+		err = chiaki_rudp_send_recv(session->rudp, &message, NULL, 0, 0, INIT_REQUEST, INIT_RESPONSE, 8, 3);
 		if(err != CHIAKI_ERR_SUCCESS)
 		{
 			CHIAKI_LOGE(session->log, "CTRL - Failed to init rudp");
@@ -1240,7 +1246,10 @@ static ChiakiErrorCode ctrl_connect(ChiakiCtrl *ctrl)
 	uint8_t ostype_enc[128];
 	size_t ostype_len = strlen(SESSION_OSTYPE) + 1;
 	if(ostype_len > sizeof(ostype_enc))
+	{
+		err = CHIAKI_ERR_BUF_TOO_SMALL;
 		goto error;
+	}
 	err = chiaki_rpcrypt_encrypt(&session->rpcrypt, ctrl->crypt_counter_local++, (const uint8_t *)SESSION_OSTYPE, ostype_enc, ostype_len);
 	if(err != CHIAKI_ERR_SUCCESS)
 		goto error;
@@ -1335,7 +1344,10 @@ static ChiakiErrorCode ctrl_connect(ChiakiCtrl *ctrl)
 			have_streaming_type ? streaming_type_b64 : "",
 			have_streaming_type ? "\r\n" : "");
 	if(request_len < 0 || request_len >= sizeof(send_buf))
+	{
+		err = CHIAKI_ERR_BUF_TOO_SMALL;
 		goto error;
+	}
 
 	CHIAKI_LOGI(session->log, "Sending ctrl request");
 	chiaki_log_hexdump(session->log, CHIAKI_LOG_VERBOSE, (const uint8_t *)send_buf, (size_t)request_len);
@@ -1348,8 +1360,8 @@ static ChiakiErrorCode ctrl_connect(ChiakiCtrl *ctrl)
 
 	bool ctrl_request_retry = false;
 	char buf[512];
-	size_t header_size;
-	size_t received_size;
+	size_t header_size = 0;
+	size_t received_size = 0;
 
 	while(true)
 	{
@@ -1359,8 +1371,10 @@ static ChiakiErrorCode ctrl_connect(ChiakiCtrl *ctrl)
 		}
 		else
 		{
-			int sent = send(ctrl->sock, (CHIAKI_SOCKET_BUF_TYPE)send_buf, (size_t)request_len, 0);
-			if(sent < 0)
+			err = chiaki_send_fully(&ctrl->stop_pipe, ctrl->sock, (const uint8_t *)send_buf, (size_t)request_len, CTRL_EXPECT_TIMEOUT);
+			CORE_TRACE("core.control.http_send", "result=%d requested_bytes=%u native_errno=%d",(int)err,(unsigned)request_len,
+				err == CHIAKI_ERR_SUCCESS ? 0 : errno);
+			if(err != CHIAKI_ERR_SUCCESS)
 			{
 				CHIAKI_LOGE(session->log, "Failed to send ctrl request");
 				goto error;
@@ -1368,6 +1382,8 @@ static ChiakiErrorCode ctrl_connect(ChiakiCtrl *ctrl)
 
 			err = chiaki_recv_http_header(ctrl->sock, buf, sizeof(buf), &header_size, &received_size, &ctrl->stop_pipe, CTRL_EXPECT_TIMEOUT);
 		}
+		CORE_TRACE("core.control.http_receive", "result=%d header_bytes=%u received_bytes=%u retry=%d",
+			(int)err,(unsigned)header_size,(unsigned)received_size,ctrl_request_retry);
 
 		if(err == CHIAKI_ERR_TIMEOUT && !ctrl_request_retry)
 		{
@@ -1429,6 +1445,7 @@ static ChiakiErrorCode ctrl_connect(ChiakiCtrl *ctrl)
 
 	ChiakiHttpResponse http_response;
 	err = chiaki_http_response_parse(&http_response, buf, header_size);
+	CORE_TRACE("core.control.http_parse", "result=%d http_status=%d",(int)err,err == CHIAKI_ERR_SUCCESS ? http_response.code:0);
 	if(err != CHIAKI_ERR_SUCCESS)
 	{
 		CHIAKI_LOGE(session->log, "Failed to parse ctrl request response");
@@ -1439,6 +1456,8 @@ static ChiakiErrorCode ctrl_connect(ChiakiCtrl *ctrl)
 
 	CtrlResponse response;
 	parse_ctrl_response(&response, &http_response);
+	CORE_TRACE("core.control.http_status", "http_status=%d accepted=%d server_type_valid=%d prohibited=%d",
+		http_response.code,response.success,response.server_type_valid,response.rp_prohibit);
 	if(!response.success)
 	{
 		CHIAKI_LOGE(session->log, "Ctrl http response was not successful. HTTP code was %d", http_response.code);
@@ -1490,7 +1509,7 @@ static ChiakiErrorCode ctrl_connect(ChiakiCtrl *ctrl)
 	else
 		CHIAKI_LOGE(session->log, "No valid Server Type in ctrl response");
 
-	if(response.rp_prohibit)
+	if(response.rp_prohibit && ctrl->session->display_sink.cantdisplay_cb)
 		ctrl->session->display_sink.cantdisplay_cb(ctrl->session->display_sink.user, true);
 
 	// if we already got more data than the header, put the rest in the buffer.
@@ -1501,6 +1520,11 @@ static ChiakiErrorCode ctrl_connect(ChiakiCtrl *ctrl)
 	return CHIAKI_ERR_SUCCESS;
 
 error:
+	/* Every failed startup must fail the control worker, even for a local
+	 * formatting/send error which previously left err equal to SUCCESS. */
+	if(err == CHIAKI_ERR_SUCCESS)
+		err = CHIAKI_ERR_UNKNOWN;
+	CORE_TRACE("core.control.failed", "result=%d native_errno=%d",(int)err,errno);
 	if(!ctrl->session->rudp)
 	{
 		if(!CHIAKI_SOCKET_IS_INVALID(ctrl->sock))

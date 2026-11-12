@@ -1,0 +1,20 @@
+{
+  "name": "3dsrp-usage-service",
+  "version": "1.0.0",
+  "description": "Opt-in 3DSRP installation and stream-duration statistics",
+  "main": "index.js",
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "dev": "wrangler dev --local",
+    "deploy": "wrangler deploy",
+    "stats": "wrangler d1 execute 3dsrp-usage --remote --file stats.sql"
+  },
+  "keywords": [],
+  "author": "AuroraStudios84",
+  "license": "AGPL-3.0-only",
+  "devDependencies": {
+    "wrangler": "^4.152.0"
+  },
+  "private": true,
+  "type": "module"
+}

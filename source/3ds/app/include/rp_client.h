@@ -44,6 +44,10 @@ int rp_goto_bed_result(RpClient *client);
 bool rp_discover(RpClient *c);
 bool rp_pair(RpClient *c, const uint8_t account[8], const char *pin);
 bool rp_connect(RpClient *c);
+#ifdef OLD3DS_BETA
+/* UI only before connection; no runtime setting changes during a session. */
+void rp_beta_audio(bool enabled);
+#endif
 bool rp_login_pin(RpClient *c, const char *pin);
 bool rp_save_pair(RpClient *c, const char *path);
 StoreResult rp_load_pair(RpClient *c, const char *path);

@@ -1,3 +1,8 @@
+#ifdef CHIAKI_OLD3DS_BETA
+#include "../../../3ds/old3ds/beta/timing.h"
+#else
+#define BETA_TIMED(stage,expression) (expression)
+#endif
 // SPDX-License-Identifier: LicenseRef-AGPL-3.0-only-OpenSSL
 
 #include <chiaki/videoreceiver.h>
@@ -192,7 +197,7 @@ static ChiakiErrorCode chiaki_video_receiver_flush_frame(ChiakiVideoReceiver *vi
 {
 	uint8_t *frame;
 	size_t frame_size;
-	ChiakiFrameProcessorFlushResult flush_result = chiaki_frame_processor_flush(&video_receiver->frame_processor, &frame, &frame_size);
+	ChiakiFrameProcessorFlushResult flush_result = BETA_TIMED(BT_FRAME_ASSEMBLY,chiaki_frame_processor_flush(&video_receiver->frame_processor, &frame, &frame_size));
 
 	if(flush_result == CHIAKI_FRAME_PROCESSOR_FLUSH_RESULT_FAILED
 		|| flush_result == CHIAKI_FRAME_PROCESSOR_FLUSH_RESULT_FEC_FAILED)
@@ -294,7 +299,7 @@ static ChiakiErrorCode chiaki_video_receiver_flush_frame(ChiakiVideoReceiver *vi
 
 	if(succ && video_receiver->session->video_sample_cb)
 	{
-		bool cb_succ = video_receiver->session->video_sample_cb(frame, frame_size, video_receiver->frames_lost, recovered, video_receiver->session->video_sample_cb_user);
+		bool cb_succ = BETA_TIMED(BT_VIDEO_INPUT,video_receiver->session->video_sample_cb(frame, frame_size, video_receiver->frames_lost, recovered, video_receiver->session->video_sample_cb_user));
 		chiaki_mutex_lock(&video_receiver->frames_lost_mutex);
 		video_receiver->frames_lost = 0;
 		chiaki_mutex_unlock(&video_receiver->frames_lost_mutex);

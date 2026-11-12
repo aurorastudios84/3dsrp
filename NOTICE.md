@@ -20,3 +20,11 @@ applicable OpenSSL linking exception, reproduced in `COPYING`. Original notices
 in the matching source archive and third-party components must remain intact.
 No warranty is provided. See the license for redistribution, modification and
 source obligations.
+
+The Original 3DS relay and Android/Windows companions also use Chiaki-derived
+protocol code, Mbed TLS, libjpeg-turbo and the shared FEC/protobuf libraries.
+The Windows companion additionally links FFmpeg 7.1.5 (LGPL build, H.264-only,
+without GPL/nonfree options) and Opus 1.6.1. Their complete pinned source archives
+and licenses are in `relay/windows/vendor/`; `fetch-deps.py` verifies checksums.
+MinGW-w64 and GCC runtime notices are in `relay/windows/licenses/`. Android's
+in-app license assets retain the corresponding library notices.

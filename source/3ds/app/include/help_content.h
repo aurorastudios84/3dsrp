@@ -125,7 +125,7 @@ static const char *const help_pages[HELP_PAGE_COUNT][HELP_PAGE_LINES] = {
         "- Source/build details: README.",
         "- Keep original credits and licenses.",
         "- Contact:",
-        "  aurorastudios84@gmail.com",
+        "  github.com/aurorastudios84",
     },
     {
         "- Optional; OFF until you agree.",
@@ -138,7 +138,7 @@ static const char *const help_pages[HELP_PAGE_COUNT][HELP_PAGE_LINES] = {
         "- ID/session data: 90-day retention.",
         "- Overall totals: 365-day retention.",
         "- Disabling clears pending reports.",
-        "- Contact: aurorastudios84@gmail.com",
+        "- Contact: github.com/aurorastudios84",
     },
 };
 

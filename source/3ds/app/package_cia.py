@@ -45,6 +45,6 @@ run(bannertool, 'makesmdh', '-s', '3DSRP', '-l',
 run(bannertool, 'makebanner', '-i', OUTPUT / 'banner.png',
     '-a', OUTPUT / 'silence.wav', '-o', OUTPUT / 'banner.bnr')
 run(makerom, '-f', 'cia', '-o', APP / '3DSRP.cia', '-target', 't',
-    '-exefslogo', '-elf', elf, '-rsf', APP / 'cia.rsf', '-ver', '4',
+    '-exefslogo', '-elf', elf, '-rsf', APP / 'cia.rsf', '-ver', '6',
     '-icon', OUTPUT / 'icon.icn', '-banner', OUTPUT / 'banner.bnr')
 print(APP / '3DSRP.cia')

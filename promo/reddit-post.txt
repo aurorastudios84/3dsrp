@@ -1,0 +1,21 @@
+Suggested title:
+I built 3DSRP: PS4/PS5 Remote Play for New 3DS, plus an Android/Windows relay for original 3DS
+
+Suggested post:
+I've been working on 3DSRP, a homebrew Remote Play project based on Chiaki / Chiaki-ng.
+
+There are two ways to use it:
+- New 3DS / New 2DS XL connects directly to your PS4 or PS5.
+- Original 3DS / 2DS uses the handheld relay app plus 3DSRP Companion on Android or Windows.
+
+The video shows my real New 3DS footage at normal speed. It isn't a demonstration of original-model performance.
+
+Both handheld apps have 3DSX and CIA downloads. The Windows companion is a direct EXE, with no admin installer. The first relay CIA is newly packaged and still needs a physical-console install/launch confirmation, so check the release notes. Existing Android debug users need to reinstall and pair again for the new release signing key.
+
+Source, setup and downloads: https://github.com/aurorastudios84/3dsrp
+
+Use your own console and a trusted local network. Performance varies with your hardware and Wi-Fi. I'd appreciate feedback, especially your handheld model, companion platform and what works or doesn't. Please don't post pairing files, account IDs or private logs.
+
+Credits to the Chiaki / Chiaki-ng and homebrew communities. This is an independent community project, not affiliated with Sony or Nintendo.
+
+Before posting: choose an appropriate subreddit/flair and check its current self-promotion and homebrew rules. Attach 3DSRP-Reddit.mp4. This text and video have not been posted automatically.

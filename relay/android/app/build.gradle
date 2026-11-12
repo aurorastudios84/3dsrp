@@ -1,0 +1,36 @@
+plugins { id 'com.android.application' }
+android {
+    namespace 'com.aurora.relay'
+    compileSdk 35
+    buildFeatures { buildConfig true }
+    ndkVersion '27.1.12297006'
+    defaultConfig {
+        applicationId 'com.aurora.relay'
+        testInstrumentationRunner 'com.aurora.relay.UiReview'
+        minSdk 26
+        targetSdk 34
+        versionCode 42
+        versionName '0.42-run-id-fix'
+        ndk { abiFilters 'arm64-v8a', 'armeabi-v7a', 'x86_64' }
+        externalNativeBuild { cmake { arguments '-DANDROID_STL=c++_static', '-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON'; cppFlags '-std=c++17' } }
+    }
+    externalNativeBuild { cmake { path 'src/main/cpp/CMakeLists.txt'; version '3.22.1' } }
+    buildTypes { debug { jniDebuggable true } }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_1_8; targetCompatibility JavaVersion.VERSION_1_8 }
+}
+
+// Both apps ship together. Fail the build if their displayed or wire releases drift.
+tasks.named('preBuild').configure {
+    doFirst {
+        def wire = rootProject.file('../common/wire.h').text
+        def protocol = file('src/main/java/com/aurora/relay/Protocol.java').text
+        def release = (wire =~ /RELAY_RELEASE (\d+)/)[0][1].toInteger()
+        def androidRelease = (protocol =~ /RELEASE=(\d+)/)[0][1].toInteger()
+        def clientTag = Long.decode((wire =~ /RELAY_COMPAT_TAG (0x[0-9a-f]+)/)[0][1])
+        def androidTag = Long.decode((protocol =~ /COMPAT=(0x[0-9a-f]+)/)[0][1])
+        if (release != android.defaultConfig.versionCode || release != androidRelease ||
+                clientTag != androidTag || clientTag != 0x52330000L + release) {
+            throw new GradleException('Android and 3DS app releases must match. Update both release numbers and compatibility tags together.')
+        }
+    }
+}

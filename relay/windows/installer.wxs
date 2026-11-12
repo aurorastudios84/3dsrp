@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+ <Product Id="*" Name="3DSRP Companion" Language="1033" Version="42.0.3" Manufacturer="Aurora Studios" UpgradeCode="10460876-FD09-4941-B02A-7F63832E773F">
+  <Package InstallerVersion="500" Compressed="yes" InstallScope="perUser" Description="3DSRP Companion for Windows"/>
+  <MajorUpgrade DowngradeErrorMessage="A newer version of 3DSRP Companion is already installed."/>
+  <MediaTemplate EmbedCab="yes"/>
+  <Property Id="ARPNOMODIFY" Value="1"/>
+  <Property Id="ARPCOMMENTS" Value="PlayStation Remote Play companion for 3DS. Installs for the current Windows user."/>
+  <Directory Id="TARGETDIR" Name="SourceDir">
+   <Directory Id="LocalAppDataFolder">
+    <Directory Id="ProgramsFolder" Name="Programs">
+     <Directory Id="INSTALLFOLDER" Name="3DSRP Companion">
+      <Component Id="MainExecutable" Guid="01DC43B1-E877-4780-A496-B432093FA611" Win64="yes">
+       <File Id="CompanionExe" Source="dist/3DSRP-Companion.exe" Name="3DSRP-Companion.exe"/>
+       <RegistryValue Root="HKCU" Key="Software\AuroraStudios\3DSRPCompanion" Name="Installed" Type="integer" Value="1" KeyPath="yes"/>
+      </Component>
+      <Component Id="Readme" Guid="4DC8AF43-36A2-4A8B-A61D-EA74DA0CD3C7" Win64="yes">
+       <File Id="ReadmeFile" Source="dist/README.txt" Name="README.txt"/>
+       <RegistryValue Root="HKCU" Key="Software\AuroraStudios\3DSRPCompanion" Name="Readme" Type="integer" Value="1" KeyPath="yes"/>
+      </Component>
+      <Component Id="Licenses" Guid="266FA97C-3C50-4C60-9BF1-FDBCB5910F60" Win64="yes">
+       <File Id="LicenseFile" Source="dist/THIRD-PARTY-LICENSES.txt" Name="THIRD-PARTY-LICENSES.txt"/>
+       <RegistryValue Root="HKCU" Key="Software\AuroraStudios\3DSRPCompanion" Name="Licenses" Type="integer" Value="1" KeyPath="yes"/>
+      </Component>
+     </Directory>
+    </Directory>
+   </Directory>
+   <Directory Id="ProgramMenuFolder">
+    <Directory Id="MenuFolder" Name="3DSRP Companion">
+     <Component Id="StartMenu" Guid="8DDE0E49-0467-4BE2-A044-6651674119E3" Win64="yes">
+      <Shortcut Id="Launch" Name="3DSRP Companion" Target="[#CompanionExe]" WorkingDirectory="INSTALLFOLDER"/>
+      <RemoveFolder Id="RemoveMenuFolder" On="uninstall"/>
+      <RegistryValue Root="HKCU" Key="Software\AuroraStudios\3DSRPCompanion" Name="Shortcut" Type="integer" Value="1" KeyPath="yes"/>
+     </Component>
+    </Directory>
+   </Directory>
+  </Directory>
+  <Feature Id="Complete" Title="3DSRP Companion" Level="1">
+   <ComponentRef Id="MainExecutable"/><ComponentRef Id="Readme"/><ComponentRef Id="Licenses"/><ComponentRef Id="StartMenu"/>
+  </Feature>
+ </Product>
+</Wix>

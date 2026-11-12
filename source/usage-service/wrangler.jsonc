@@ -1,0 +1,31 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "3dsrp-usage",
+	"main": "worker.mjs",
+	"compatibility_date": "2026-10-22",
+	"workers_dev": true,
+	"preview_urls": false,
+	"observability": {
+		"enabled": false,
+		"logs": {
+			"enabled": false,
+			"invocation_logs": false,
+			"persist": false
+		},
+		"traces": {
+			"enabled": false
+		}
+	},
+	"triggers": {
+		"crons": [
+			"10 3 * * *"
+		]
+	},
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "3dsrp-usage",
+			"database_id": "00000000-0000-0000-0000-000000000000"
+		}
+	]
+}

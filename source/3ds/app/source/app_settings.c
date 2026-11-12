@@ -72,6 +72,9 @@ bool app_settings_cycle(AppSettings *settings,unsigned row,int direction)
             settings->hud_hold_buttons=1u<<8; /* L when entering from an empty legacy mask. */
         break;
     case APP_SETTING_PUSH_OPTIONS: settings->push_options_on_menu=!settings->push_options_on_menu; break;
+    case APP_SETTING_SIXAXIS_INVERT_YAW: settings->sixaxis_invert_yaw=!settings->sixaxis_invert_yaw; break;
+    case APP_SETTING_SIXAXIS_INVERT_PITCH: settings->sixaxis_invert_pitch=!settings->sixaxis_invert_pitch; break;
+    case APP_SETTING_SIXAXIS_INVERT_ROLL: settings->sixaxis_invert_roll=!settings->sixaxis_invert_roll; break;
     default: return false;
     }
     return true;
@@ -84,7 +87,7 @@ StoreResult app_settings_load(const char *path,AppSettings *settings)
     if(!store_recover(path)) return STORE_IO;
     FILE *file=fopen(path,"rb");
     if(!file) return errno==ENOENT ? STORE_MISSING : STORE_IO;
-    uint8_t bytes[36]={0};
+    uint8_t bytes[40]={0};
     size_t size=fread(bytes,1,sizeof(bytes),file);
     int extra=fgetc(file);
     bool error=ferror(file)!=0;
@@ -94,6 +97,20 @@ StoreResult app_settings_load(const char *path,AppSettings *settings)
     AppSettings candidate;
     app_settings_defaults(&candidate);
     bool migration_pending=false;
+    bool roll_version=size==40 && !memcmp(bytes,"N3DSOP13",8);
+    bool motion_version=roll_version || (size==40 && !memcmp(bytes,"N3DSOP12",8));
+    if(motion_version) {
+        if(bytes[8]!=(roll_version ? 13 : 12) || bytes[31] || bytes[32]>1 || bytes[33]>1 ||
+           (roll_version ? bytes[34]>1 : bytes[34]<1 || bytes[34]>10) || bytes[35] ||
+           get32(bytes+36)!=checksum(bytes,36)) return STORE_INVALID;
+        candidate.sixaxis_invert_yaw=bytes[32]!=0;
+        candidate.sixaxis_invert_pitch=bytes[33]!=0;
+        candidate.sixaxis_invert_roll=roll_version && bytes[34]!=0;
+        memcpy(bytes,"N3DSOP11",8); bytes[8]=11;
+        uint32_t crc=checksum(bytes,32);
+        for(unsigned i=0;i<4;i++) bytes[32+i]=(uint8_t)(crc>>(8*i));
+        size=36;
+    }
     bool bottom_version=size==36 && !memcmp(bytes,"N3DSOP11",8);
     bool hold_version=bottom_version || (size==36 && !memcmp(bytes,"N3DSOP10",8));
     AppBottomView saved_view=APP_BOTTOM_BLANK;
@@ -175,7 +192,7 @@ StoreResult app_settings_load(const char *path,AppSettings *settings)
     if(bottom_version) candidate.bottom_view=saved_view;
     else if(candidate.bottom_view==APP_BOTTOM_BLANK && candidate.hud_hold_buttons)
         candidate.bottom_view=APP_BOTTOM_HOLD_HUD;
-    migration_pending=migration_pending || !bottom_version;
+    migration_pending=migration_pending || !roll_version;
     /* Older versions permitted Hold with no buttons. That behaved as Blank;
      * keep its behavior without loading an unusable Hold configuration. */
     if(candidate.bottom_view==APP_BOTTOM_HOLD_HUD && !candidate.hud_hold_buttons) {
@@ -190,9 +207,9 @@ StoreResult app_settings_load(const char *path,AppSettings *settings)
 bool app_settings_save(const char *path,const AppSettings *settings)
 {
     if(!path || !app_settings_valid(settings)) return false;
-    uint8_t bytes[36]={0};
-    memcpy(bytes,"N3DSOP11",8);
-    bytes[8]=11; bytes[9]=0;
+    uint8_t bytes[40]={0};
+    memcpy(bytes,"N3DSOP13",8);
+    bytes[8]=13; bytes[9]=0;
     bytes[10]=settings->fps;
     bytes[11]=settings->onscreen_helpers ? 1 : 0;
     bytes[16]=settings->touch_grid ? 1 : 0;
@@ -204,7 +221,10 @@ bool app_settings_save(const char *path,const AppSettings *settings)
     put16(bytes+24,settings->hud_view.center_x); put16(bytes+26,settings->hud_view.center_y);
     put16(bytes+28,settings->hud_hold_buttons);
     bytes[30]=(uint8_t)settings->bottom_view;
-    uint32_t crc=checksum(bytes,32);
-    for(unsigned i=0;i<4;i++) bytes[32+i]=(uint8_t)(crc>>(8*i));
+    bytes[32]=settings->sixaxis_invert_yaw;
+    bytes[33]=settings->sixaxis_invert_pitch;
+    bytes[34]=settings->sixaxis_invert_roll;
+    uint32_t crc=checksum(bytes,36);
+    for(unsigned i=0;i<4;i++) bytes[36+i]=(uint8_t)(crc>>(8*i));
     return store_atomic_write(path,bytes,sizeof(bytes));
 }

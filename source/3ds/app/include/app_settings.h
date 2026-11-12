@@ -8,7 +8,8 @@ typedef enum { APP_RESOLUTION_360P=0, APP_RESOLUTION_480P=1,
 typedef enum { APP_BOTTOM_BLANK=0, APP_BOTTOM_HUD=1,
     APP_BOTTOM_HOLD_HUD=2 } AppBottomView;
 enum { APP_SETTING_TOUCH_GRID, APP_SETTING_BOTTOM_VIEW,
-    APP_SETTING_PUSH_OPTIONS, APP_SETTING_BACK, APP_SETTING_COUNT };
+    APP_SETTING_PUSH_OPTIONS, APP_SETTING_SIXAXIS_INVERT_YAW,
+    APP_SETTING_SIXAXIS_INVERT_PITCH, APP_SETTING_SIXAXIS_INVERT_ROLL, APP_SETTING_BACK, APP_SETTING_COUNT };
 typedef struct {
     AppResolution resolution;
     uint32_t bitrate_kbps;
@@ -17,6 +18,9 @@ typedef struct {
     bool touch_grid;
     AppBottomView bottom_view;
     bool push_options_on_menu;
+    bool sixaxis_invert_yaw;
+    bool sixaxis_invert_pitch;
+    bool sixaxis_invert_roll;
     /* Physical input bits 0..11: ABXY, D-pad, L/R/ZL/ZR. Hold mode requires one. */
     uint16_t hud_hold_buttons;
     ZoomView reading_view;

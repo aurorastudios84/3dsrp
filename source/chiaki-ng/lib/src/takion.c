@@ -1,3 +1,8 @@
+#ifdef CHIAKI_OLD3DS_BETA
+#include "../../../3ds/old3ds/beta/timing.h"
+#else
+#define BETA_TIMED(stage,expression) (expression)
+#endif
 // SPDX-License-Identifier: LicenseRef-AGPL-3.0-only-OpenSSL
 
 #include "chiaki/feedback.h"
@@ -1154,7 +1159,7 @@ static void *takion_thread_func(void *user)
 			takion_av_queues_flush_with_timeout(takion);
 			continue;
 		}
-		ChiakiErrorCode err = takion_recv(takion, buf, &received_size, recv_timeout_ms);
+		ChiakiErrorCode err = BETA_TIMED(BT_NETWORK_RECEIVE,takion_recv(takion, buf, &received_size, recv_timeout_ms));
 		if(err != CHIAKI_ERR_SUCCESS)
 		{
 			free(buf);
@@ -1165,13 +1170,25 @@ static void *takion_thread_func(void *user)
 			}
 			break;
 		}
+#ifdef CHIAKI_OLD3DS_BETA
+		/* Keep the 1500-byte receive allocation. Shrinking every datagram adds
+		 * allocator work (and may copy it) just before dispatch frees it again. */
+		uint8_t *resized_buf = buf;
+#else
 		uint8_t *resized_buf = realloc(buf, received_size);
+#endif
 		if(!resized_buf)
 		{
 			free(buf);
 			continue;
 		}
+#ifdef CHIAKI_OLD3DS_BETA
+        uint64_t bt_packet=beta_timing_begin();
+#endif
 		takion_handle_packet(takion, resized_buf, received_size);
+#ifdef CHIAKI_OLD3DS_BETA
+        beta_timing_end(BT_NETWORK_PROCESS,bt_packet);
+#endif
 	}
 
 	chiaki_takion_send_buffer_fini(&takion->send_buffer);
@@ -1205,6 +1222,32 @@ beach:
 
 static ChiakiErrorCode takion_recv(ChiakiTakion *takion, uint8_t *buf, size_t *buf_size, uint64_t timeout_ms)
 {
+#if defined(CHIAKI_OLD3DS_BETA) && defined(__3DS__)
+	/* 3DS sockets are nonblocking. Drain an already queued datagram with one
+	 * SOC request instead of select+recv; wait only once the socket is empty.
+	 * Check cancellation on every iteration, including a sustained burst. */
+	uint64_t started = chiaki_time_now_monotonic_ms();
+	for(;;)
+	{
+		if(__atomic_load_n(&takion->stop_pipe.stopped, __ATOMIC_SEQ_CST))
+			return CHIAKI_ERR_CANCELED;
+		CHIAKI_SSIZET_TYPE received_sz = recv(takion->sock, buf, *buf_size, 0);
+		if(received_sz > 0)
+		{
+			*buf_size = (size_t)received_sz;
+			return CHIAKI_ERR_SUCCESS;
+		}
+		if(received_sz == 0 || (errno != EAGAIN && errno != EWOULDBLOCK && errno != EINTR))
+			return CHIAKI_ERR_NETWORK;
+		uint64_t elapsed = chiaki_time_now_monotonic_ms() - started;
+		if(timeout_ms != UINT64_MAX && elapsed >= timeout_ms)
+			return CHIAKI_ERR_TIMEOUT;
+		ChiakiErrorCode err = chiaki_stop_pipe_select_single(&takion->stop_pipe, takion->sock,
+			false, timeout_ms == UINT64_MAX ? UINT64_MAX : timeout_ms - elapsed);
+		if(err != CHIAKI_ERR_SUCCESS)
+			return err;
+	}
+#else
 	ChiakiErrorCode err = chiaki_stop_pipe_select_single(&takion->stop_pipe, takion->sock, false, timeout_ms);
 	if(err == CHIAKI_ERR_TIMEOUT || err == CHIAKI_ERR_CANCELED)
 		return err;
@@ -1226,6 +1269,7 @@ static ChiakiErrorCode takion_recv(ChiakiTakion *takion, uint8_t *buf, size_t *b
 
 	*buf_size = (size_t)received_sz;
 	return CHIAKI_ERR_SUCCESS;
+#endif
 }
 
 static ChiakiErrorCode takion_handle_packet_mac(ChiakiTakion *takion, uint8_t base_type, uint8_t *buf, size_t buf_size)
@@ -1242,7 +1286,7 @@ static ChiakiErrorCode takion_handle_packet_mac(ChiakiTakion *takion, uint8_t ba
 		CHIAKI_LOGE(takion->log, "Takion failed to pull key_pos out of received packet");
 		return err;
 	}
-	err = chiaki_takion_packet_mac(takion->gkcrypt_remote, buf, buf_size, key_pos, mac_expected, mac);
+	err = BETA_TIMED(BT_NETWORK_AUTH,chiaki_takion_packet_mac(takion->gkcrypt_remote, buf, buf_size, key_pos, mac_expected, mac));
 	if(err != CHIAKI_ERR_SUCCESS)
 	{
 		CHIAKI_LOGE(takion->log, "Takion failed to calculate mac for received packet");
@@ -1708,6 +1752,26 @@ static void takion_handle_packet_av(ChiakiTakion *takion, uint8_t base_type, uin
 		*head_wait = 0;
 		*head_wait_seq_num = queue_begin;
 	}
+
+#ifdef CHIAKI_OLD3DS_BETA
+	/* The normal in-order path needs neither a heap queue entry nor a queue
+	 * push/pull cycle. Preserve the exact same sequence advancement. Any gap,
+	 * duplicate or buffered packet still uses the full reorder machinery. */
+	if(queue->count == 0 && packet.packet_index == (ChiakiSeqNum16)queue->begin)
+	{
+		queue->begin = (ChiakiSeqNum16)(packet.packet_index + 1);
+		*head_wait = 0;
+		if(takion->cb)
+		{
+			ChiakiTakionEvent event = { 0 };
+			event.type = CHIAKI_TAKION_EVENT_TYPE_AV;
+			event.av = &packet;
+			takion->cb(&event, takion->cb_user);
+		}
+		free(buf);
+		return;
+	}
+#endif
 
 	TakionAVPacketEntry *entry = malloc(sizeof(TakionAVPacketEntry));
 	if(!entry)

@@ -1,4 +1,4 @@
-# Local build outputs
+# Generated binaries and build directories
 build/
 build-3ds/
 cia-build/
@@ -9,11 +9,10 @@ cia-build/
 *.3dsx
 *.smdh
 *.cia
-*.pyc
-*.swp
-*.swo
 __pycache__/
-.env
-.env.*
-3ds/usage-tls/lib/
 3ds/app/include/build_id.h
+
+node_modules/
+.wrangler/
+
+/3ds/usage-tls/lib/

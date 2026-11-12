@@ -8,6 +8,8 @@ typedef struct {
     ChiakiOrientationTracker tracker;
     bool valid;
 } Motion3ds;
+/* UI-thread owned preferences, applied to the next sampled motion. */
+void motion_3ds_configure(bool invert_yaw, bool invert_pitch, bool invert_roll);
 void motion_3ds_reset(Motion3ds *motion);
 /* HID calibrated accelerometer axes; gyro arguments in physical x/y/z order,
  * i.e. libctru angularRate.x, .z (yaw), .y. Coefficient is raw units/dps. */

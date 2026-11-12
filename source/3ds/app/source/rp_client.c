@@ -13,6 +13,17 @@
 #include <stdlib.h>
 #include <strings.h>
 #include <unistd.h>
+#ifdef OLD3DS_PROTOTYPE
+#include "prototype_log.h"
+#define RP_TRACE(...) prototype_log(__VA_ARGS__)
+#else
+#define RP_TRACE(...) ((void)0)
+#endif
+#ifdef OLD3DS_BETA
+static bool beta_audio_enabled=true;
+void rp_beta_audio(bool enabled) {beta_audio_enabled=enabled;}
+#include "probe.h"
+#endif
 #ifdef __3DS__
 #include <3ds.h>
 #endif
@@ -69,7 +80,7 @@ static bool digits(const char *s, size_t n) {
 }
 
 static void fail(RpClient *c, RpError error) {
-
+    RP_TRACE("remote.error","state=%d app_error=%d",(int)rp_state(c),(int)error);
     atomic_store(&c->error,error); atomic_store(&c->state,RP_FAILED);
 }
 static RpError error_code(ChiakiErrorCode e) {
@@ -82,6 +93,8 @@ static RpError error_code(ChiakiErrorCode e) {
 }
 /* Session teardown runs after startup has joined. */
 static void rp_stop_session(RpClient *c) {
+    RP_TRACE("remote.cleanup.begin","discovery=%d registration=%d session=%d audio=%d",
+        c->discovery_live,c->registration_live,c->session_started,c->audio_started);
 
     if(c->discovery_live) {
 
@@ -159,6 +172,7 @@ static void rp_stop_session(RpClient *c) {
     secret_clear(&c->candidate,sizeof(c->candidate)); c->have_candidate=false;
     atomic_store(&c->verified,false);
     atomic_store(&c->state,c->have_saved ? RP_PAIRED:RP_IDLE);
+    RP_TRACE("remote.cleanup.end","saved_pair=%d",c->have_saved);
 
 }
 void rp_stop(RpClient *c) { rp_stop_session(c); }
@@ -218,6 +232,7 @@ bool rp_request_stop(RpClient *client) {
     ChiakiErrorCode result=chiaki_thread_create(&client->cleanup_thread,cleanup_worker,client);
 
     client->cleanup_live=result==CHIAKI_ERR_SUCCESS;
+    RP_TRACE("remote.cleanup.thread","result=%d",(int)result);
 
     return client->cleanup_live;
 }
@@ -247,6 +262,7 @@ static void discovered(ChiakiDiscoveryHost *h, void *user) {
         return;
     }
     bool ps5=chiaki_discovery_host_is_ps5(h);
+    RP_TRACE("remote.discovery.reply","ps5=%d host_state=%d adding_pair=%d",ps5,(int)h->state,c->adding_pair);
     bool ps4=h->device_discovery_protocol_version &&
         !strcmp(h->device_discovery_protocol_version,CHIAKI_DISCOVERY_PROTOCOL_VERSION_PS4);
     ChiakiTarget target_type=CHIAKI_TARGET_PS5_1;
@@ -338,6 +354,7 @@ static bool wakeup_credential(const uint8_t key[16], uint64_t *credential) {
     return true;
 }
 static bool discover(RpClient *c) {
+    RP_TRACE("remote.discovery.begin","saved=%d adding_pair=%d",c->have_saved,c->adding_pair);
     if(rp_stopping(c)) return false;
     rp_stop(c); atomic_store(&c->error,RP_ERROR_NONE);
     if(atomic_load(&c->cleanup_failed)) { fail(c,RP_ERROR_PROTOCOL); return false; }
@@ -367,6 +384,8 @@ static bool discovery_finish(RpClient *c) {
 }
 static void registered(ChiakiRegistEvent *event, void *user) {
     RpClient *c=user;
+    RP_TRACE("remote.registration.event","type=%d result=%d application_reason=0x%08lx",
+        (int)event->type,(int)event->error,(unsigned long)event->application_reason);
 
     if(event->type==CHIAKI_REGIST_EVENT_TYPE_FINISHED_SUCCESS && event->registered_host) {
         const ChiakiRegisteredHost *h=event->registered_host;
@@ -460,6 +479,7 @@ bool rp_forget(RpClient *c, const char *path) {
 }
 static void session_event(ChiakiEvent *event, void *user) {
     RpClient *c=user;
+    RP_TRACE("remote.session.event","type=%d state=%d",(int)event->type,(int)rp_state(c));
 
     switch(event->type) {
         case CHIAKI_EVENT_CONNECTED:
@@ -472,10 +492,15 @@ static void session_event(ChiakiEvent *event, void *user) {
             atomic_store(&c->error,event->login_pin_request.pin_incorrect ? RP_ERROR_LOGIN:RP_ERROR_NONE);
             atomic_store(&c->state,RP_LOGIN_PIN); break;
         case CHIAKI_EVENT_QUIT:
+            RP_TRACE("remote.session.quit","reason=%d description=%s",(int)event->quit.reason,
+                chiaki_quit_reason_string(event->quit.reason));
             if(rp_error(c)==RP_ERROR_IDENTITY) break;
             if(!chiaki_quit_reason_is_error(event->quit.reason)) atomic_store(&c->state,RP_STOPPED);
             else fail(c,event->quit.reason==CHIAKI_QUIT_REASON_SESSION_REQUEST_RP_IN_USE ? RP_ERROR_BUSY:RP_ERROR_NETWORK);
             break;
+#ifdef OLD3DS_BETA
+        case CHIAKI_EVENT_VIDEO_FEC_FAILURE: beta_probe_fec();break;
+#endif
         default: break;
     }
 }
@@ -547,6 +572,8 @@ AudioStats rp_audio_stats(RpClient *c) {
     return unavailable;
 }
 bool rp_connect(RpClient *c) {
+    RP_TRACE("remote.connect.begin","state=%d saved=%d verified=%d stopping=%d",(int)rp_state(c),
+        c->have_saved,atomic_load(&c->verified),rp_stopping(c));
     if(rp_stopping(c)) return false;
     if(!app_settings_valid(&c->stream_settings)) { fail(c,RP_ERROR_PROTOCOL); return false; }
     if(!c->have_saved || !atomic_load(&c->verified) || rp_state(c)!=RP_FOUND) return false;
@@ -559,17 +586,30 @@ bool rp_connect(RpClient *c) {
     chiaki_connect_video_profile_preset(&info.video_profile,
         CHIAKI_VIDEO_RESOLUTION_PRESET_360p,
         CHIAKI_VIDEO_FPS_PRESET_30);
+#ifdef OLD3DS_BETA
+    info.video_profile.bitrate=1000;
+#else
     info.video_profile.bitrate=2000;
+#endif
     info.video_profile.codec=CHIAKI_CODEC_H264;
+    RP_TRACE("remote.connect.profile","ps5=%d width=%u height=%u fps=%u bitrate_kbps=%u codec=%d",
+        info.ps5,(unsigned)info.video_profile.width,(unsigned)info.video_profile.height,
+        (unsigned)info.video_profile.max_fps,(unsigned)info.video_profile.bitrate,(int)info.video_profile.codec);
     /* The request mask is copied by session_init, so establish the output
      * pipeline first. A failed audio start leaves video enabled. */
+#ifdef OLD3DS_BETA
+    c->audio_started=beta_audio_enabled && c->audio && audio_pipeline_start(c->audio);
+#else
     c->audio_started=c->audio && audio_pipeline_start(c->audio);
+#endif
+    RP_TRACE("remote.connect.audio","started=%d",c->audio_started);
     info.audio_video_disabled=c->audio_started ? 0 : CHIAKI_AUDIO_DISABLED;
 
     info.enable_idr_on_fec_failure=true;
     info.packet_loss_max=0.05;
 
     ChiakiErrorCode e=chiaki_session_init(&c->session,&info,&c->log);
+    RP_TRACE("remote.session.init","result=%d",(int)e);
     secret_clear(&info,sizeof(info));
     if(e!=CHIAKI_ERR_SUCCESS) {
         if(c->audio_started) {
@@ -590,6 +630,7 @@ bool rp_connect(RpClient *c) {
     }
     atomic_store(&c->error,RP_ERROR_NONE); atomic_store(&c->state,RP_CONNECTING);
     e=chiaki_session_start(&c->session);
+    RP_TRACE("remote.session.start","result=%d",(int)e);
     if(e!=CHIAKI_ERR_SUCCESS) { rp_stop(c); fail(c,error_code(e)); return false; }
 
     c->session_started=true; return true;

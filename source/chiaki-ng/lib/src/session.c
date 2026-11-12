@@ -6,6 +6,7 @@
 #include <chiaki/http.h>
 #include <chiaki/base64.h>
 #include <chiaki/random.h>
+#include "prototype_diag.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -494,6 +495,7 @@ static void *session_thread_func(void *arg)
 
 	ChiakiTarget server_target = CHIAKI_TARGET_PS4_UNKNOWN;
 	ChiakiErrorCode err = session_thread_request_session(session, &server_target);
+	CORE_TRACE("core.session.request", "result=%d target=%d",(int)err,(int)server_target);
 
 	if(err == CHIAKI_ERR_VERSION_MISMATCH && !chiaki_target_is_unknown(server_target))
 	{
@@ -526,10 +528,12 @@ static void *session_thread_func(void *arg)
 	CHIAKI_LOGI(session->log, "Starting ctrl");
 
 	err = chiaki_ctrl_start(&session->ctrl);
+	CORE_TRACE("core.control.start", "result=%d",(int)err);
 	if(err != CHIAKI_ERR_SUCCESS)
 		QUIT(quit);
 
 	err = chiaki_cond_timedwait_pred(&session->state_cond, &session->state_mutex, SESSION_EXPECT_CTRL_START_MS, session_check_state_pred_ctrl_start, session);
+	CORE_TRACE("core.control.wait", "result=%d failed=%d",(int)err,session->ctrl_failed);
 	CHECK_STOP(quit_ctrl);
 
 	if(session->ctrl_failed)
@@ -603,6 +607,7 @@ static void *session_thread_func(void *arg)
 
 	if(!session->ctrl_session_id_received)
 	{
+		CORE_TRACE("core.control.fallback.begin", "received_id=0 failed=%d",session->ctrl_failed);
 		CHIAKI_LOGE(session->log, "Ctrl did not receive session id");
 		chiaki_mutex_unlock(&session->state_mutex);
 		err = ctrl_message_set_fallback_session_id(&session->ctrl);
@@ -610,6 +615,7 @@ static void *session_thread_func(void *arg)
 		if(err != CHIAKI_ERR_SUCCESS)
 			goto ctrl_failed;
 		ctrl_enable_features(&session->ctrl);
+		CORE_TRACE("core.control.fallback.end", "received_id=%d result=%d",session->ctrl_session_id_received,(int)err);
 	}
 
 	if(!session->ctrl_session_id_received)
@@ -621,7 +627,17 @@ ctrl_failed:
 		QUIT(quit_ctrl);
 	}
 
-#ifdef ENABLE_SENKUSHA
+#if defined(CHIAKI_OLD3DS_PROTOTYPE)
+	/* Calibration is optional. Its 30-second UDP connect wait held the session
+	 * mutex and outlasted this prototype's entire connection deadline. Use the
+	 * same conservative values as the normal failed-probe fallback. */
+	session->mtu_in = 1454;
+	session->mtu_out = 1454;
+	session->rtt_us = 1000;
+	session->dontfrag = false;
+	CORE_TRACE("core.probe.skipped", "reason=original_3ds_prototype mtu_in=%u mtu_out=%u rtt_us=%u dontfrag=0",
+		(unsigned)session->mtu_in,(unsigned)session->mtu_out,(unsigned)session->rtt_us);
+#elif defined(ENABLE_SENKUSHA)
 	CHIAKI_LOGI(session->log, "Starting Senkusha");
 
 	ChiakiSenkusha senkusha;
@@ -630,6 +646,7 @@ ctrl_failed:
 		QUIT(quit_ctrl);
 
 	err = chiaki_senkusha_run(&senkusha, &session->mtu_in, &session->mtu_out, &session->rtt_us, data_sock);
+	CORE_TRACE("core.probe.end", "result=%d",(int)err);
 	chiaki_senkusha_fini(&senkusha);
 	CHECK_STOP(quit_ctrl);
 	if(session->ctrl_failed)
@@ -678,6 +695,7 @@ ctrl_failed:
 	}
 
 	err = chiaki_ecdh_init(&session->ecdh);
+	CORE_TRACE("core.ecdh.init", "result=%d",(int)err);
 	if(err != CHIAKI_ERR_SUCCESS)
 	{
 		CHIAKI_LOGE(session->log, "Session failed to initialize ECDH");
@@ -686,6 +704,7 @@ ctrl_failed:
 
 	chiaki_mutex_unlock(&session->state_mutex);
 	err = chiaki_stream_connection_run(&session->stream_connection, data_sock);
+	CORE_TRACE("core.stream.run.end", "result=%d",(int)err);
 	chiaki_mutex_lock(&session->state_mutex);
 	if(err == CHIAKI_ERR_DISCONNECTED)
 	{
@@ -843,6 +862,7 @@ static ChiakiErrorCode session_thread_request_session(ChiakiSession *session, Ch
 
 			chiaki_mutex_unlock(&session->state_mutex);
 			err = chiaki_stop_pipe_connect(&session->stop_pipe, session_sock, sa, ai->ai_addrlen, 5000);
+			CORE_TRACE("core.session.tcp_connect", "result=%d native_errno=%d",(int)err,err == CHIAKI_ERR_SUCCESS ? 0:errno);
 			chiaki_mutex_lock(&session->state_mutex);
 			if(err == CHIAKI_ERR_CANCELED)
 			{
@@ -989,6 +1009,7 @@ static ChiakiErrorCode session_thread_request_session(ChiakiSession *session, Ch
 		err = chiaki_send_recv_http_header_psn(session->rudp, session->log, &remote_counter, send_buf, request_len, buf, sizeof(buf), &header_size, &received_size);
 	else
 		err = chiaki_recv_http_header(session_sock, buf, sizeof(buf), &header_size, &received_size, &session->stop_pipe, SESSION_EXPECT_TIMEOUT_MS);
+	CORE_TRACE("core.session.response", "result=%d",(int)err);
 	ChiakiErrorCode mutex_err = chiaki_mutex_lock(&session->state_mutex);
 	assert(mutex_err == CHIAKI_ERR_SUCCESS);
 	if(err != CHIAKI_ERR_SUCCESS)
@@ -1077,6 +1098,7 @@ static ChiakiErrorCode session_thread_request_session(ChiakiSession *session, Ch
 	else
 	{
 		CHIAKI_LOGE(session->log, "Reported Application Reason: %#x (%s)", (unsigned int)response.error_code, chiaki_rp_application_reason_string(response.error_code));
+		CORE_TRACE("core.session.application_error", "reason=0x%08x",(unsigned)response.error_code);
 		switch(response.error_code)
 		{
 			case CHIAKI_RP_APPLICATION_REASON_IN_USE:

@@ -108,7 +108,7 @@ CHIAKI_EXPORT void chiaki_senkusha_fini(ChiakiSenkusha *senkusha)
 static bool state_finished_cond_check(void *user)
 {
 	ChiakiSenkusha *senkusha = user;
-	return senkusha->state_finished || senkusha->should_stop;
+	return senkusha->state_finished || senkusha->state_failed || senkusha->should_stop;
 }
 
 CHIAKI_EXPORT ChiakiErrorCode chiaki_senkusha_run(ChiakiSenkusha *senkusha, uint32_t *mtu_in, uint32_t *mtu_out, uint64_t *rtt_us, chiaki_socket_t *socket)
@@ -182,6 +182,8 @@ CHIAKI_EXPORT ChiakiErrorCode chiaki_senkusha_run(ChiakiSenkusha *senkusha, uint
 
 		if(senkusha->should_stop)
 			err = CHIAKI_ERR_CANCELED;
+		else if(senkusha->state_failed)
+			err = CHIAKI_ERR_DISCONNECTED;
 		else
 			CHIAKI_LOGE(session->log, "Senkusha Takion connect failed");
 

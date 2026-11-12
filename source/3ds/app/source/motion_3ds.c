@@ -5,6 +5,11 @@
 #include <chiaki/time.h>
 #endif
 
+static bool invert_yaw, invert_pitch, invert_roll;
+void motion_3ds_configure(bool yaw,bool pitch,bool roll)
+{
+    invert_yaw=yaw; invert_pitch=pitch; invert_roll=roll;
+}
 static float limit(float v, float bound) { return fmaxf(-bound,fminf(bound,v)); }
 void motion_3ds_reset(Motion3ds *m)
 {
@@ -56,24 +61,24 @@ void motion_3ds_apply(Motion3ds *m,ChiakiControllerState *state)
     state->gyro_y=-state->gyro_y;
     state->orient_x=-state->orient_x;
     state->orient_y=-state->orient_y;
-    /* Gesture gain: amplify angular velocity and acceleration relative to
-     * estimated gravity, not gravity itself. Keep absolute tilt unchanged.
-     * 3x signal targets the same gesture with one-third of the movement. */
-    const float gain=3.0f;
-    ChiakiOrientation q=m->tracker.orient;
-    float qnorm=q.x*q.x+q.y*q.y+q.z*q.z+q.w*q.w;
-    float gravity_x=0,gravity_y=1,gravity_z=0;
-    if(isfinite(qnorm) && qnorm>0.000001f) {
-        gravity_x=2*(q.x*q.z-q.w*q.y)/qnorm;
-        gravity_y=2*(q.w*q.x+q.y*q.z)/qnorm;
-        gravity_z=-(q.w*q.w-q.x*q.x-q.y*q.y+q.z*q.z)/qnorm;
+    /* Fixed 1x sensitivity: forward calibrated sensor values without gain.
+     * Invert rotational axes independently in the final controller frame:
+     * pitch=X, yaw=Y, roll=Z. Quaternion vector components encode the rotation
+     * axis; changing their signs preserves angle and unit length. */
+    if(invert_yaw) {
+        state->accel_x=-state->accel_x;
+        state->gyro_y=-state->gyro_y;
+        state->orient_y=-state->orient_y;
     }
-    state->accel_x=limit(gravity_x+gain*(state->accel_x-gravity_x),5);
-    state->accel_y=limit(gravity_y+gain*(state->accel_y-gravity_y),5);
-    state->accel_z=limit(gravity_z+gain*(state->accel_z-gravity_z),5);
-    state->gyro_x=limit(gain*state->gyro_x,30);
-    state->gyro_y=limit(gain*state->gyro_y,30);
-    state->gyro_z=limit(gain*state->gyro_z,30);
+    if(invert_pitch) {
+        state->accel_z=-state->accel_z;
+        state->gyro_x=-state->gyro_x;
+        state->orient_x=-state->orient_x;
+    }
+    if(invert_roll) {
+        state->gyro_z=-state->gyro_z;
+        state->orient_z=-state->orient_z;
+    }
 }
 #ifdef __3DS__
 static Motion3ds current;

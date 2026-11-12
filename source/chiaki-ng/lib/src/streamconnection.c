@@ -1,3 +1,8 @@
+#ifdef CHIAKI_OLD3DS_BETA
+#include "../../../3ds/old3ds/beta/timing.h"
+#else
+#define BETA_TIMED(stage,expression) (expression)
+#endif
 // SPDX-License-Identifier: LicenseRef-AGPL-3.0-only-OpenSSL
 
 #include "chiaki/common.h"
@@ -7,6 +12,7 @@
 #include <chiaki/base64.h>
 #include <chiaki/audio.h>
 #include <chiaki/video.h>
+#include "prototype_diag.h"
 
 #include <string.h>
 #include <inttypes.h>
@@ -208,6 +214,7 @@ CHIAKI_EXPORT ChiakiErrorCode chiaki_stream_connection_run(ChiakiStreamConnectio
 	stream_connection->state_finished = false;
 	stream_connection->state_failed = false;
 	err = chiaki_takion_connect(&stream_connection->takion, &takion_info, socket);
+	CORE_TRACE("core.stream.takion_start", "result=%d",(int)err);
 
 	if(err != CHIAKI_ERR_SUCCESS)
 	{
@@ -238,6 +245,7 @@ CHIAKI_EXPORT ChiakiErrorCode chiaki_stream_connection_run(ChiakiStreamConnectio
 	stream_connection->state_finished = false;
 	stream_connection->state_failed = false;
 	err = stream_connection_send_big(stream_connection);
+	CORE_TRACE("core.stream.launch_send", "result=%d",(int)err);
 	if(err != CHIAKI_ERR_SUCCESS)
 	{
 		CHIAKI_LOGE(session->log, "StreamConnection failed to send big");
@@ -258,6 +266,7 @@ CHIAKI_EXPORT ChiakiErrorCode chiaki_stream_connection_run(ChiakiStreamConnectio
 		goto disconnect;
 	}
 	CHIAKI_LOGI(session->log, "StreamConnection successfully received bang");
+	CORE_TRACE("core.stream.handshake", "finished=%d failed=%d",stream_connection->state_finished,stream_connection->state_failed);
 	stream_connection->state = STATE_EXPECT_STREAMINFO;
 	stream_connection->state_finished = false;
 	stream_connection->state_failed = false;
@@ -283,6 +292,7 @@ CHIAKI_EXPORT ChiakiErrorCode chiaki_stream_connection_run(ChiakiStreamConnectio
 	}
 
 	CHIAKI_LOGI(session->log, "StreamConnection successfully received streaminfo");
+	CORE_TRACE("core.stream.info", "finished=%d failed=%d",stream_connection->state_finished,stream_connection->state_failed);
 
 	err = chiaki_mutex_lock(&stream_connection->feedback_sender_mutex);
 	assert(err == CHIAKI_ERR_SUCCESS);
@@ -330,6 +340,8 @@ CHIAKI_EXPORT ChiakiErrorCode chiaki_stream_connection_run(ChiakiStreamConnectio
 	err = CHIAKI_ERR_SUCCESS;
 
 disconnect:
+	CORE_TRACE("core.stream.disconnect", "result=%d state=%d finished=%d failed=%d",(int)err,
+		(int)stream_connection->state,stream_connection->state_finished,stream_connection->state_failed);
 	CHIAKI_LOGI(session->log, "StreamConnection is disconnecting");
 	if(stream_connection->streaminfo_early_buf)
 	{
@@ -891,6 +903,8 @@ static bool pb_decode_resolution(pb_istream_t *stream, const pb_field_t *field, 
 	ChiakiVideoProfile *profile = &ctx->video_profiles[ctx->video_profiles_count++];
 	profile->width = resolution.width;
 	profile->height = resolution.height;
+	CORE_TRACE("core.stream.video_profile", "index=%u width=%u height=%u header_bytes=%u",
+		(unsigned)(ctx->video_profiles_count-1),(unsigned)profile->width,(unsigned)profile->height,(unsigned)header_buf.size);
 	profile->header_sz = header_buf.size;
 	profile->header = header_buf_padded;
 	return true;
@@ -1228,7 +1242,7 @@ static ChiakiErrorCode stream_connection_send_disconnect(ChiakiStreamConnection 
 
 static void stream_connection_takion_av(ChiakiStreamConnection *stream_connection, ChiakiTakionAVPacket *packet)
 {
-	chiaki_gkcrypt_decrypt(stream_connection->gkcrypt_remote, packet->key_pos + CHIAKI_GKCRYPT_BLOCK_SIZE, packet->data, packet->data_size);
+	BETA_TIMED(BT_NETWORK_DECRYPT,chiaki_gkcrypt_decrypt(stream_connection->gkcrypt_remote, packet->key_pos + CHIAKI_GKCRYPT_BLOCK_SIZE, packet->data, packet->data_size));
 
 	if(packet->is_video)
 		chiaki_video_receiver_av_packet(stream_connection->video_receiver, packet);

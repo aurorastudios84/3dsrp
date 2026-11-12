@@ -1,0 +1,21 @@
+{
+  "name": "3dsrp-usage-dashboard",
+  "private": true,
+  "type": "module",
+  "version": "1.0.0",
+  "author": "AuroraStudios84",
+  "license": "AGPL-3.0-only",
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "dev": "wrangler dev --local",
+    "deploy": "wrangler deploy",
+    "build": "node build.mjs",
+    "pretest": "node build.mjs",
+    "predev": "node build.mjs",
+    "predeploy": "node build.mjs"
+  },
+  "devDependencies": {
+    "wrangler": "4.152.0",
+    "@playwright/test": "1.58.2"
+  }
+}

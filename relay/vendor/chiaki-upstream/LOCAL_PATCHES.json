@@ -1,0 +1,17 @@
+{
+  "description": "Local relay patch: retry latest unacknowledged controller history after 20/50/100/200 ms and refresh every 200 ms until superseded. Original upstream hashes remain in UPSTREAM.json. Control rejection diagnostics additionally retain the numeric RP-Application-Reason on failed HTTP handshakes.",
+  "files": {
+    "lib/src/feedbacksender.c": {
+      "upstream_sha256": "2b7bfe7e0255ac17536112f4de4f1f9b5269ce1cd2d3b3444459c5c476ff360b",
+      "patched_sha256": "1e8d79942ff91f208bfae03d732b99baf9f2d95b132b8a1a6779252ec9898da4"
+    },
+    "lib/include/chiaki/feedbacksender.h": {
+      "upstream_sha256": "f341f65e63422d287c6ab6d29f39d0aa4aeb8c99de87cd7c8b47b416de67cead",
+      "patched_sha256": "dcf5fd7466a9ef0ce7da688f1522b9d9ab80ef7733df5708e4c2fbb20b16201b"
+    },
+    "lib/src/ctrl.c": {
+      "upstream_sha256": "8c6ad2ddd3ea416610e9514b8690e2a49800c3976f8007e1b06e9a04c93f2a85",
+      "patched_sha256": "9e069c726f8779928a303c922d6a9e886b4f7117004d02a9094cab6af853dc94"
+    }
+  }
+}

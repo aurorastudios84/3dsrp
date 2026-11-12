@@ -1,7 +1,13 @@
-# Local build outputs
-build/
-build-3ds/
-cia-build/
+# Generated builds and machine-local state
+**/build/
+**/build-3ds/
+**/cia-build/
+**/.gradle/
+**/.cxx/
+**/.wrangler/
+**/node_modules/
+**/__pycache__/
+*.pyc
 *.o
 *.d
 *.a
@@ -9,11 +15,24 @@ cia-build/
 *.3dsx
 *.smdh
 *.cia
-*.pyc
-*.swp
-*.swo
-__pycache__/
+*.apk
+*.exe
+*.msi
+*.log
+*.map
+local.properties
 .env
 .env.*
+.dev.vars
+*.jks
+*.keystore
+*.p12
+*.pfx
 source/3ds/usage-tls/lib/
 source/3ds/app/include/build_id.h
+relay/output/
+relay/windows/dist/
+relay/windows/prefix/
+relay/windows/toolchain
+relay/windows/vendor/ffmpeg-7.1.5/
+relay/windows/vendor/opus-1.6.1/

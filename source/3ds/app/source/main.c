@@ -545,7 +545,10 @@ static bool settings_changed(void)
         settings_draft.onscreen_helpers!=app_settings.onscreen_helpers ||
         settings_draft.touch_grid!=app_settings.touch_grid ||
         settings_draft.hud_hold_buttons!=app_settings.hud_hold_buttons ||
-        settings_draft.push_options_on_menu!=app_settings.push_options_on_menu;
+        settings_draft.push_options_on_menu!=app_settings.push_options_on_menu ||
+        settings_draft.sixaxis_invert_yaw!=app_settings.sixaxis_invert_yaw ||
+        settings_draft.sixaxis_invert_pitch!=app_settings.sixaxis_invert_pitch ||
+        settings_draft.sixaxis_invert_roll!=app_settings.sixaxis_invert_roll;
 }
 static void open_settings(LocalMenu parent)
 {
@@ -858,9 +861,12 @@ static bool draw_local_menu(void)
         snprintf(line,sizeof(line),"Touch grid: %s",settings_draft.touch_grid ? "ON" : "OFF"); menu_item(3,APP_SETTING_TOUCH_GRID,line,settings_row);
         snprintf(line,sizeof(line),"Bottom view: %s",app_settings_bottom_view_label(&settings_draft)); menu_item(5,APP_SETTING_BOTTOM_VIEW,line,settings_row);
         snprintf(line,sizeof(line),"Push Options on entering menu: %s",settings_draft.push_options_on_menu ? "ON" : "OFF"); menu_item(7,APP_SETTING_PUSH_OPTIONS,line,settings_row);
-        snprintf(line,sizeof(line),"Sixaxis: %s",sixaxis_enabled ? "ON" : "OFF"); menu_item(9,SETTINGS_SIXAXIS,line,settings_row);
-        snprintf(line,sizeof(line),"Usage statistics: %s",usage.enabled ? "ON" : "OFF");menu_item(11,SETTINGS_USAGE,line,settings_row);
-        menu_item(13,SETTINGS_BACK,"Back",settings_row);
+        snprintf(line,sizeof(line),"Invert yaw: %s",settings_draft.sixaxis_invert_yaw ? "ON" : "OFF"); menu_item(9,APP_SETTING_SIXAXIS_INVERT_YAW,line,settings_row);
+        snprintf(line,sizeof(line),"Invert pitch: %s",settings_draft.sixaxis_invert_pitch ? "ON" : "OFF"); menu_item(11,APP_SETTING_SIXAXIS_INVERT_PITCH,line,settings_row);
+        snprintf(line,sizeof(line),"Invert roll: %s",settings_draft.sixaxis_invert_roll ? "ON" : "OFF"); menu_item(13,APP_SETTING_SIXAXIS_INVERT_ROLL,line,settings_row);
+        snprintf(line,sizeof(line),"Sixaxis: %s",sixaxis_enabled ? "ON" : "OFF"); menu_item(15,SETTINGS_SIXAXIS,line,settings_row);
+        snprintf(line,sizeof(line),"Usage statistics: %s",usage.enabled ? "ON" : "OFF");menu_item(17,SETTINGS_USAGE,line,settings_row);
+        menu_item(19,SETTINGS_BACK,"Back",settings_row);
         console_at(23,0); printf("Hold for HUD opens button settings.");
         console_at(25,0); printf("Up/Down select; Left/Right edit");
         console_at(27,0); printf("A Open / toggle  B Back");
@@ -1184,6 +1190,8 @@ int main(void)
         bool previous_touchpad_mode=touch_capture.touchpad_mode;
         Input3dsSnapshot snapshot={0};
         bool connected=phase==UI_STREAM && rp_state(client)==RP_CONNECTED;
+        motion_3ds_configure(app_settings.sixaxis_invert_yaw,
+            app_settings.sixaxis_invert_pitch,app_settings.sixaxis_invert_roll);
         motion_3ds_poll(connected && sixaxis_enabled);
         if(connected) {
             snapshot=sample_input(held);

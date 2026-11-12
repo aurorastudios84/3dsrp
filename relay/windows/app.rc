@@ -1,0 +1,29 @@
+#include <windows.h>
+1 RT_MANIFEST "app.manifest"
+1 VERSIONINFO
+FILEVERSION 42,0,3,0
+PRODUCTVERSION 42,0,3,0
+FILEFLAGSMASK 0x3fL
+FILEFLAGS 0
+FILEOS VOS_NT_WINDOWS32
+FILETYPE VFT_APP
+BEGIN
+ BLOCK "StringFileInfo"
+ BEGIN
+  BLOCK "040904b0"
+  BEGIN
+   VALUE "CompanyName", "Aurora Studios\0"
+   VALUE "FileDescription", "3DSRP Companion for Windows\0"
+   VALUE "FileVersion", "42.0.3\0"
+   VALUE "InternalName", "3DSRP-Companion\0"
+   VALUE "OriginalFilename", "3DSRP-Companion.exe\0"
+   VALUE "ProductName", "3DSRP Companion\0"
+   VALUE "ProductVersion", "42.0.3\0"
+   VALUE "LegalCopyright", "AGPL-3.0 with OpenSSL exception; see bundled licenses\0"
+  END
+ END
+ BLOCK "VarFileInfo"
+ BEGIN
+  VALUE "Translation", 0x409, 1200
+ END
+END

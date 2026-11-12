@@ -1,3 +1,8 @@
+#ifdef CHIAKI_OLD3DS_BETA
+#include "../../../3ds/old3ds/beta/timing.h"
+#else
+#define BETA_TIMED(stage,expression) (expression)
+#endif
 // SPDX-License-Identifier: LicenseRef-AGPL-3.0-only-OpenSSL
 
 #include <chiaki/gkcrypt.h>
@@ -486,7 +491,7 @@ static ChiakiErrorCode gkcrypt_generate_next_chunk(ChiakiGKCrypt *gkcrypt)
 
 	chiaki_mutex_unlock(&gkcrypt->key_buf_mutex);
 
-	ChiakiErrorCode err = chiaki_gkcrypt_gen_key_stream(gkcrypt, key_pos, buf_start, KEY_BUF_CHUNK_SIZE);
+	ChiakiErrorCode err = BETA_TIMED(BT_KEYSTREAM,chiaki_gkcrypt_gen_key_stream(gkcrypt, key_pos, buf_start, KEY_BUF_CHUNK_SIZE));
 	if(err != CHIAKI_ERR_SUCCESS)
 		CHIAKI_LOGE(gkcrypt->log, "GKCrypt failed to generate key stream chunk");
 
