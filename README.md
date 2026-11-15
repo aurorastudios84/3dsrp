@@ -33,9 +33,7 @@ The Windows app runs as your current user, without an admin installer or extra
 runtime. It is unsigned; managed computers may block it under their policies.
 The direct EXE is the supported public download for this release.
 
-**First public relay CIA:** package integrity, title metadata and executable
-contents have been checked, but installation and launch on a physical original
-3DS still need confirmation. The CIA and 3DSX use the same built relay executable.
+The relay CIA and 3DSX use the same built relay executable.
 The standalone New 3DS artifacts are also fresh builds, not a new hardware test.
 See each release's validation notes before updating.
 
