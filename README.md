@@ -73,7 +73,6 @@ local. See [PRIVACY.md](PRIVACY.md).
 - `relay/common`, `relay/vendor`: shared relay protocol, processing and dependencies.
 - `source/usage-service`: optional statistics backend
   source; deployment configuration contains placeholders, not live credentials.
-- `promo`: Reddit video edit script and suggested post text.
 
 The relay's shared handheld helpers are preserved in `relay/3ds/shared` so its
 working revision stays independent of the standalone application's revision.

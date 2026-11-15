@@ -32,9 +32,6 @@ identities are excluded. Public reporting endpoints and license credits remain.
   decompressed APK contents passed the final known-private-string check.
 - Dependencies retain license notices; pinned Windows codec archives are
   checksum-verified. The matching source archive includes a file hash inventory.
-- Reddit promo: 30 seconds, 1080p/30 fps H.264/AAC, real New 3DS footage at normal
-  speed, no account/pairing screens. Original project soundtrack; game audio
-  omitted. The video identifies the hardware shown and explains both app routes.
 
 ## Still needed on hardware
 
