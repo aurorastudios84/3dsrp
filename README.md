@@ -61,7 +61,7 @@ Handheld settings remain under `/3ds/n3ds-remoteplay/` (standalone) or
 Replacing the Windows EXE preserves its existing per-user app data and pairings.
 
 Optional usage statistics require consent. Windows startup diagnostics remain
-local; automatic startup-log uploads have been removed. See [PRIVACY.md](PRIVACY.md).
+local. See [PRIVACY.md](PRIVACY.md).
 
 ## Source layout
 
