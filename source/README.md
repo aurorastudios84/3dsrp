@@ -59,9 +59,3 @@ script automatically builds and namespaces the private library; Chiaki continues
 to use the existing devkitPro crypto library without ABI changes.
 Diagnostic logging and developer UDP senders remain removed. Pairings and
 existing app settings remain compatible. Usage preferences are stored separately.
-
-## Usage service
-
-`usage-service/` contains the matching Cloudflare Worker, D1 schema, tests,
-retention schedule and private administrator queries. See its README for setup
-and statistics access. No Cloudflare account token belongs in this source tree.

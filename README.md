@@ -67,8 +67,6 @@ local. See [PRIVACY.md](PRIVACY.md).
 - `relay/android`: Android companion.
 - `relay/windows`: Windows companion.
 - `relay/common`, `relay/vendor`: shared relay protocol, processing and dependencies.
-- `source/usage-service`: optional statistics backend
-  source; deployment configuration contains placeholders, not live credentials.
 
 The relay's shared handheld helpers are preserved in `relay/3ds/shared` so its
 working revision stays independent of the standalone application's revision.

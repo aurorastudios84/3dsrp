@@ -75,17 +75,8 @@ certificate. No certificate or private key is provided.
 python3 relay/windows/tests/test_editor.py
 python3 relay/windows/tests/test_connection_flow.py
 python3 relay/windows/tests/test_console_monitor.py
-node --test source/usage-service/test/*.test.mjs
 ```
 
 Additional relay tests are under `relay/tests`; emulator tests need an Android
 SDK/emulator, and codec tests need their native dependencies built first.
 Host and packaging checks do not replace a real console/phone/Windows test.
-
-## Optional statistics services
-
-The applications are configured for the project's public HTTPS reporting endpoint.
-The server source is included for review and self-hosting. Configure your own
-Cloudflare account, D1 database and Access identity before deploying. Placeholder
-database IDs and identities intentionally cannot target the maintainer's live
-resources. Never commit `.dev.vars`, access tokens or database exports.
