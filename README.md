@@ -60,11 +60,6 @@ Handheld settings remain under `/3ds/n3ds-remoteplay/` (standalone) or
 `/3ds/3dsrp-relay/` (relay). CIA and 3DSX of the same app share those folders.
 Replacing the Windows EXE preserves its existing per-user app data and pairings.
 
-The public Android APK uses a new private release signing key. Existing debug
-builds cannot be updated in place with this APK: uninstall the debug build,
-install the release APK, and pair again. Later releases using this same release
-key can update normally. Never share pairing files or upload them to an issue.
-
 Optional usage statistics require consent. Windows startup diagnostics remain
 local; automatic startup-log uploads have been removed. See [PRIVACY.md](PRIVACY.md).
 
