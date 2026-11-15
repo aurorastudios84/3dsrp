@@ -65,12 +65,3 @@ existing app settings remain compatible. Usage preferences are stored separately
 `usage-service/` contains the matching Cloudflare Worker, D1 schema, tests,
 retention schedule and private administrator queries. See its README for setup
 and statistics access. No Cloudflare account token belongs in this source tree.
-
-## Private usage dashboard
-
-`usage-dashboard/` provides a separate, read-only Cloudflare dashboard for the
-existing statistics database: date filters, daily charts, installation IDs,
-per-installation activity and CSV export. It requires Cloudflare Access and the
-maintainer's exact email; without authentication it returns no usage data.
-See [its setup guide](usage-dashboard/README.md). App reporting uses the separate
-public usage-service Worker and does not require dashboard sign-in.

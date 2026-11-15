@@ -76,7 +76,6 @@ python3 relay/windows/tests/test_editor.py
 python3 relay/windows/tests/test_connection_flow.py
 python3 relay/windows/tests/test_console_monitor.py
 node --test source/usage-service/test/*.test.mjs
-npm --prefix source/usage-dashboard test
 ```
 
 Additional relay tests are under `relay/tests`; emulator tests need an Android

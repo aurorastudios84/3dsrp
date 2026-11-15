@@ -71,7 +71,7 @@ local. See [PRIVACY.md](PRIVACY.md).
 - `relay/android`: Android companion.
 - `relay/windows`: Windows companion.
 - `relay/common`, `relay/vendor`: shared relay protocol, processing and dependencies.
-- `source/usage-service`, `source/usage-dashboard`: optional statistics backend
+- `source/usage-service`: optional statistics backend
   source; deployment configuration contains placeholders, not live credentials.
 - `promo`: Reddit video edit script and suggested post text.
 

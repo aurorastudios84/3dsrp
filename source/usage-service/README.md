@@ -87,9 +87,7 @@ synthetic reports in production.
 `new_3ds` or `original_3ds`. It uses the same 192-byte bound, validation,
 maximum-duration deduplication, out-of-order midnight correction and retention.
 Older `/v1` and `/v2` reports continue to use the native New 3DS table family.
-The shared private dashboard unions the families for All apps and filters by
-app throughout overview, history, details and CSV. The same UUID in two app
-families counts as two app installations.
+The same UUID in two app families counts as two app installations.
 
 The original relay client keeps consent, UUID, timing and pending reports on the
 handheld, using the existing C accounting/journal code. Android only delivers
